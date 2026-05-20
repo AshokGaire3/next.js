@@ -179,6 +179,8 @@ export function getDefineEnv({
       config.experimental.cachedNavigations
     ),
     'process.env.__NEXT_INSTANT_NAV_TOGGLE': isCacheComponentsEnabled,
+    'process.env.__NEXT_REQUEST_INSIGHTS':
+      dev && !!config.experimental.requestInsights,
     'process.env.__NEXT_USE_CACHE': isUseCacheEnabled,
     'process.env.__NEXT_USE_NODE_STREAMS': isEdgeServer ? false : true,
 
