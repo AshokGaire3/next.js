@@ -266,7 +266,8 @@ impl Asset for ServerActionManifestAsset {
                     ActionMetadata {
                         exported_name: &meta.name,
                         filename,
-                        code_hash: if meta.is_use_cache && durable_use_cache_entries {
+                        // TODO only do this for "use cache" functions, not all server actions
+                        code_hash: if durable_use_cache_entries {
                             Some(
                                 compute_subtree_content_hash(
                                     *self.module_graph,
@@ -475,19 +476,14 @@ enum ServerActionInfoRaw {
     /// Old format: just the export name as a string
     Name(String),
     /// New format: object with name
-    WithName { name: String, is_use_cache: bool },
+    WithName { name: String },
 }
 
 impl ServerActionInfoRaw {
     fn into_action_entry(self) -> ActionEntry {
         match self {
-            ServerActionInfoRaw::Name(name) => ActionEntry {
-                name,
-                is_use_cache: false,
-            },
-            ServerActionInfoRaw::WithName { name, is_use_cache } => {
-                ActionEntry { name, is_use_cache }
-            }
+            ServerActionInfoRaw::Name(name) => ActionEntry { name },
+            ServerActionInfoRaw::WithName { name } => ActionEntry { name },
         }
     }
 }
@@ -496,7 +492,6 @@ impl ServerActionInfoRaw {
 #[derive(Clone, Debug, PartialEq, Eq, TraceRawVcs, NonLocalValue, Encode, Decode)]
 pub struct ActionEntry {
     pub name: String,
-    pub is_use_cache: bool,
 }
 
 /// Parses the Server Actions comment for all exported action function names.
@@ -692,7 +687,6 @@ pub struct ActionMeta {
     pub name: String,
     /// The original source file path (from entry_path in the action comment)
     pub source_path: String,
-    pub is_use_cache: bool,
 }
 
 type HashToLayerNameModule = Vec<(
