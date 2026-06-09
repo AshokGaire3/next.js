@@ -1366,5 +1366,7 @@
   "1365": "Expected a dev tiered cache handler for kind \"%s\".",
   "1366": "Turbopack build failed with %s %s:\\n%s",
   "1367": "createServerParamsForRoute should not be called in runtime prerenders.",
-  "1368": "Invariant: dev virtual filesystem item was not handled by the development bundler"
+  "1368": "Invariant: dev virtual filesystem item was not handled by the development bundler",
+  "1369": "Invariant: dev server state can only be updated in dev",
+  "1370": "Invariant: no app initialized"
 }
