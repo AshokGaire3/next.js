@@ -1741,6 +1741,12 @@ type LoadConfigOptions = {
   bundler?: Bundler
 }
 
+// If loading and evaluating the user's config (including any config plugins
+// such as `withMDX` or `withBundleAnalyzer`) takes longer than this, emit a
+// line reporting how long it took. Fast configs stay silent; slow plugin
+// chains get surfaced so they can be investigated.
+const SLOW_CONFIG_EVAL_THRESHOLD_MS = 500
+
 export default async function loadConfig(
   phase: typeof PHASE_DEVELOPMENT_SERVER,
   dir: string,
@@ -1760,6 +1766,36 @@ export default async function loadConfig(
 export default async function loadConfig(
   phase: PHASE_TYPE,
   dir: string,
+  opts: LoadConfigOptions = {}
+): Promise<NextConfigComplete> {
+  const start = performance.now()
+  // Intentionally not in a `finally`: if evaluation throws, the user already
+  // gets a "Failed to load" error, so reporting how long the failed attempt
+  // took on top of that is just noise.
+  const [config, meta] = await loadConfigImpl(phase, dir, opts)
+  const durationMs = performance.now() - start
+  // Skip the cache-hit fast path: it returns in ~0ms and doesn't re-evaluate
+  // the user's config, so its timing is meaningless noise.
+  if (
+    !meta.cacheHit &&
+    !opts.silent &&
+    durationMs > SLOW_CONFIG_EVAL_THRESHOLD_MS
+  ) {
+    Log.event(
+      `Evaluating ${meta.configFileName ?? 'next.config'} took ${Math.round(durationMs)}ms`
+    )
+  }
+  return config
+}
+
+// The resolved config plus metadata the timing wrapper in `loadConfig` needs:
+// `configFileName` names the actual file (e.g. `next.config.ts`) in the log
+// line, and `cacheHit` flags the fast path so its ~0ms timing is ignored.
+type LoadConfigMeta = { configFileName?: string; cacheHit?: boolean }
+
+async function loadConfigImpl(
+  phase: PHASE_TYPE,
+  dir: string,
   {
     customConfig,
     rawConfig,
@@ -1768,8 +1804,9 @@ export default async function loadConfig(
     reactProductionProfiling,
     debugPrerender,
     bundler,
-  }: LoadConfigOptions = {}
-): Promise<NextConfigComplete> {
+  }: LoadConfigOptions
+): Promise<[NextConfigComplete, LoadConfigMeta]> {
+  const meta: LoadConfigMeta = {}
   // Generate cache key based on parameters that affect config output
   // Include process.pid to invalidate cache on server restart
   const cacheKey = getCacheKey(
@@ -1784,6 +1821,8 @@ export default async function loadConfig(
   // Check if we have a cached result
   const cachedResult = configCache.get(cacheKey)
   if (cachedResult) {
+    meta.cacheHit = true
+
     // Call the experimental features callback if provided
     if (reportExperimentalFeatures) {
       reportExperimentalFeatures(cachedResult.configuredExperimentalFeatures)
@@ -1791,10 +1830,10 @@ export default async function loadConfig(
 
     // Return raw config if requested and available
     if (rawConfig && cachedResult.rawConfig) {
-      return cachedResult.rawConfig
+      return [cachedResult.rawConfig, meta]
     }
 
-    return cachedResult.config
+    return [cachedResult.config, meta]
   } else {
     // Reset next.config errors before loading config
     // This happens on every config load to ensure fresh validation
@@ -1828,7 +1867,7 @@ export default async function loadConfig(
       configuredExperimentalFeatures: [],
     })
 
-    return standaloneConfig
+    return [standaloneConfig, meta]
   }
 
   const curLog = silent
@@ -1875,7 +1914,7 @@ export default async function loadConfig(
 
     reportExperimentalFeatures?.(configuredExperimentalFeatures)
 
-    return config
+    return [config, meta]
   }
 
   const path = await findUp(CONFIG_FILES, { cwd: dir })
@@ -1883,6 +1922,7 @@ export default async function loadConfig(
   // If config file was found
   if (path?.length) {
     configFileName = basename(path)
+    meta.configFileName = configFileName
 
     let userConfigModule: any
     let loadedConfig: NextConfig
@@ -1924,7 +1964,7 @@ export default async function loadConfig(
 
         reportExperimentalFeatures?.(configuredExperimentalFeatures)
 
-        return userConfigModule
+        return [userConfigModule, meta]
       }
 
       // `normalizeConfig` invokes the user's exported config function (or
@@ -2080,7 +2120,7 @@ export default async function loadConfig(
       reportExperimentalFeatures(configuredExperimentalFeatures)
     }
 
-    return finalConfig
+    return [finalConfig, meta]
   } else {
     const configBaseName = basename(CONFIG_FILES[0], extname(CONFIG_FILES[0]))
     const unsupportedConfig = findUp.sync(
@@ -2139,7 +2179,7 @@ export default async function loadConfig(
     reportExperimentalFeatures(configuredExperimentalFeatures)
   }
 
-  return finalConfig
+  return [finalConfig, meta]
 }
 
 export type ConfiguredExperimentalFeature = {
