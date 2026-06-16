@@ -16,9 +16,9 @@ use serde::{Deserialize, Serialize};
 use turbo_esregex::EsRegex;
 use turbo_rcstr::{RcStr, rcstr};
 use turbo_tasks::{
-    CollectiblesSource, NonLocalValue, OperationVc, RawVc, ReadRef, ResolvedVc, TransientValue,
-    TryFlatJoinIterExt, TryJoinIterExt, Upcast, ValueDefault, ValueToString, ValueToStringRef, Vc,
-    emit, trace::TraceRawVcs,
+    CollectiblesSource, NonLocalValue, OperationVc, OrdResolvedVc, RawVc, ReadRef, ResolvedVc,
+    TransientValue, TryFlatJoinIterExt, TryJoinIterExt, Upcast, ValueDefault, ValueToString,
+    ValueToStringRef, Vc, emit, trace::TraceRawVcs,
 };
 use turbo_tasks_fs::{
     FileContent, FileLine, FileLinesContent, FileSystem, FileSystemPath, glob::Glob,
@@ -193,7 +193,15 @@ pub trait ImportTracer {
 #[turbo_tasks::value]
 #[derive(Debug)]
 pub struct DelegatingImportTracer {
-    delegates: AutoSet<ResolvedVc<Box<dyn ImportTracer>>>,
+    delegates: Vec<OrdResolvedVc<Box<dyn ImportTracer>>>,
+}
+
+#[turbo_tasks::value_impl]
+impl DelegatingImportTracer {
+    #[turbo_tasks::function]
+    pub fn new(delegates: Vec<OrdResolvedVc<Box<dyn ImportTracer>>>) -> Vc<Self> {
+        Self::cell(DelegatingImportTracer { delegates })
+    }
 }
 
 impl DelegatingImportTracer {
@@ -395,11 +403,10 @@ impl IssueFilter {
 }
 
 /// A list of issues captured with [`CollectibleIssuesExt::peek_issues`].
-#[turbo_tasks::value(shared)]
 #[derive(Debug)]
 pub struct CapturedIssues {
     issues: AutoSet<ResolvedVc<Box<dyn Issue>>>,
-    tracer: ResolvedVc<DelegatingImportTracer>,
+    tracer: Vc<DelegatingImportTracer>,
 }
 
 impl CapturedIssues {
@@ -416,7 +423,7 @@ impl CapturedIssues {
             .map(async |issue| {
                 if filter.matches(*issue).await? {
                     Ok(Some(
-                        PlainIssue::from_issue(**issue, Some(*self.tracer)).await?,
+                        PlainIssue::from_issue(**issue, Some(self.tracer)).await?,
                     ))
                 } else {
                     Ok(None)
@@ -1102,13 +1109,19 @@ where
     T: CollectiblesSource + Copy + Send,
 {
     fn peek_issues(self) -> CapturedIssues {
+        let collectibles = {
+            let mut c: Vec<OrdResolvedVc<Box<dyn ImportTracer>>> = self
+                .peek_collectibles()
+                .into_iter()
+                .map(OrdResolvedVc::from)
+                .collect();
+            c.sort();
+            c
+        };
+
         CapturedIssues {
             issues: self.peek_collectibles(),
-
-            tracer: DelegatingImportTracer {
-                delegates: self.peek_collectibles(),
-            }
-            .resolved_cell(),
+            tracer: DelegatingImportTracer::new(collectibles),
         }
     }
 
