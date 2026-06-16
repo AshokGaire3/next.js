@@ -1383,5 +1383,7 @@
   "1382": "Route \"%s\": \\`%s\\` can't be called inside \\`\"use cache\"\\`. Draft mode can be read from a cached function, but enabling or disabling it must happen outside.\\nLearn more: https://nextjs.org/docs/messages/next-request-in-use-cache",
   "1383": "Route \"%s\": \\`headers()\\` can't be read inside \\`unstable_cache()\\`. Read it outside the cached function and pass what you need as an argument.\\nLearn more: https://nextjs.org/docs/app/api-reference/functions/unstable_cache",
   "1384": "Route \"%s\": \\`connection()\\` can't be used inside \\`\"use cache: private\"\\`. A private cache entry can be built before a navigation request, so it can't depend on one.\\nLearn more: https://nextjs.org/docs/messages/next-request-in-use-cache",
-  "1385": "Route \"%s\": \\`connection()\\` can't be used inside \\`\"use cache\"\\`. A cache entry can be built before any request exists, so it can't depend on one.\\nLearn more: https://nextjs.org/docs/messages/next-request-in-use-cache"
+  "1385": "Route \"%s\": \\`connection()\\` can't be used inside \\`\"use cache\"\\`. A cache entry can be built before any request exists, so it can't depend on one.\\nLearn more: https://nextjs.org/docs/messages/next-request-in-use-cache",
+  "1386": "\\`experimental.turbopackRustReactCompiler\\` is only supported with Turbopack. Please remove the option or run Next.js with Turbopack in %s.",
+  "1387": "\\`experimental.turbopackRustReactCompiler\\` requires \\`reactCompiler\\` to be enabled. Please add \\`reactCompiler: true\\` in %s."
 }
