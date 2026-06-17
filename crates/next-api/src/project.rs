@@ -1476,12 +1476,17 @@ impl Project {
                 .next_config()
                 .turbopack_remove_unused_imports(self.next_mode())
                 .await?;
+            let scope_hoisting = *self
+                .next_config()
+                .turbo_scope_hoisting(self.next_mode())
+                .await?;
             ModuleGraph::from_graphs(
                 vec![SingleModuleGraph::new_with_entry(
                     ChunkGroupEntry::Entry(vec![entry]),
                     ModuleGraphOptions {
                         include_idents: is_production,
                         include_side_effects: turbopack_remove_unused_imports,
+                        include_mergeable: scope_hoisting,
                         include_traced: is_production,
                         include_binding_usage: is_production,
                     },
@@ -1505,6 +1510,10 @@ impl Project {
                 .next_config()
                 .turbopack_remove_unused_imports(self.next_mode())
                 .await?;
+            let scope_hoisting = *self
+                .next_config()
+                .turbo_scope_hoisting(self.next_mode())
+                .await?;
             let entries = evaluatable_assets
                 .await?
                 .iter()
@@ -1518,6 +1527,7 @@ impl Project {
                     ModuleGraphOptions {
                         include_idents: is_production,
                         include_side_effects: turbopack_remove_unused_imports,
+                        include_mergeable: scope_hoisting,
                         include_traced: is_production,
                         include_binding_usage: is_production,
                     },
@@ -2676,12 +2686,19 @@ async fn whole_app_module_graph_operation(
             .next_config()
             .turbopack_remove_unused_imports(next_mode)
             .await?;
+        let scope_hoisting = *project
+            .next_config()
+            .turbo_scope_hoisting(next_mode)
+            .await?;
         let graph_options = ModuleGraphOptions {
             // Collect idents in production to support NFT asset production and telemetry reporting.
             include_idents: is_production,
             // Store each module's `side_effects()` so the side-effect-free aggregation reads it
             // from the graph. Only needed (and only run) when tree-shaking unused imports.
             include_side_effects: turbopack_remove_unused_imports,
+            // Store each module's `is_mergeable()` so module merging reads it from the graph. Only
+            // needed (and only run) when scope hoisting / module merging is enabled.
+            include_mergeable: scope_hoisting,
             include_traced: is_production,
             include_binding_usage: is_production,
         };
