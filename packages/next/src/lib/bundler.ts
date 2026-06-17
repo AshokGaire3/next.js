@@ -20,11 +20,6 @@ export function bundlerName(bundler: Bundler): string {
 
 /**
  * Derive the currently configured bundler from the environment.
- *
- * The CLI resolves Turbopack-vs-webpack and forwards the decision to the dev
- * child via the `TURBOPACK` env var (see `parseBundlerArgs`), while Rspack is
- * configured by the next config setting `NEXT_RSPACK`. The dev child doesn't
- * have the CLI options, so it reads the bundler back out of the environment.
  */
 export function getBundlerFromEnv(): Bundler {
   if (process.env.NEXT_RSPACK) {

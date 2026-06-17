@@ -969,11 +969,7 @@ export default async function build(
         .traceFn(() => loadEnvConfig(dir, false, Log))
       NextBuildContext.loadedEnvFiles = loadedEnvFiles
 
-      // Log the version banner before loading the config so it is the first
-      // line of build output, matching `next dev`. The bundler label is read
-      // from env, which the config can still flip to Rspack below; the
-      // experiments block (which depends on the loaded config) stays after the
-      // config load.
+      // Log the version banner before loading the config just like `dev`
       logStartInfo({
         networkUrl: null,
         appUrl: null,
@@ -1200,8 +1196,6 @@ export default async function build(
         telemetry.record(events)
       )
 
-      // The version banner is logged before the config load above; the
-      // experiments block depends on the loaded config, so it stays here.
       logExperimentalInfo({
         experimentalFeatures,
         cacheComponents: !!config.cacheComponents,

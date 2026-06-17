@@ -100,10 +100,7 @@ export async function initialize(opts: {
     process.env.NODE_ENV = opts.dev ? 'development' : 'production'
   }
 
-  // Capture the bundler before loading the config: the config can switch the
-  // bundler to Rspack (by setting NEXT_RSPACK), and `finalizeBundlerFromConfig`
-  // logs that transition. Only relevant in dev; `next build` already logs the
-  // switch, and `next start` doesn't bundle so the choice is moot there.
+  // Capture the bundler before loading the config
   const bundlerBeforeConfig = opts.dev ? getBundlerFromEnv() : undefined
 
   let experimentalFeatures: ConfiguredExperimentalFeature[] = []
