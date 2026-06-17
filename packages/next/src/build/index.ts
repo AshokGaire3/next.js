@@ -969,6 +969,18 @@ export default async function build(
         .traceFn(() => loadEnvConfig(dir, false, Log))
       NextBuildContext.loadedEnvFiles = loadedEnvFiles
 
+      // Log the version banner before loading the config so it is the first
+      // line of build output, matching `next dev`. The bundler label is read
+      // from env, which the config can still flip to Rspack below; the
+      // experiments block (which depends on the loaded config) stays after the
+      // config load.
+      logStartInfo({
+        networkUrl: null,
+        appUrl: null,
+        envInfo: getEnvInfo(dir),
+        logBundler: true,
+      })
+
       const turborepoAccessTraceResult = new TurborepoAccessTraceResult()
       let experimentalFeatures: ConfiguredExperimentalFeature[] = []
       const config: NextConfigComplete = await nextBuildSpan
@@ -1188,16 +1200,8 @@ export default async function build(
         telemetry.record(events)
       )
 
-      // Always log next version first then start rest jobs
-      const envInfo = getEnvInfo(dir)
-
-      logStartInfo({
-        networkUrl: null,
-        appUrl: null,
-        envInfo,
-        logBundler: true,
-      })
-
+      // The version banner is logged before the config load above; the
+      // experiments block depends on the loaded config, so it stays here.
       logExperimentalInfo({
         experimentalFeatures,
         cacheComponents: !!config.cacheComponents,
