@@ -1,17 +1,10 @@
-import { join } from 'path'
-import { execFileSync } from 'child_process'
+import { spawnSync } from 'child_process'
 import { nextTestSetup, isNextDev } from 'e2e-utils'
 import { shouldUseTurbopack } from 'next-test-utils'
 
-const relayCompilerPath = join(
-  __dirname,
-  '../../../node_modules/relay-compiler/cli.js'
-)
-
 describe('Relay Compiler Transform - Multi Project Config', () => {
   beforeAll(() => {
-    execFileSync(process.execPath, [relayCompilerPath], {
-      cwd: __dirname,
+    spawnSync('pnpm', ['exec', 'relay-compiler'], {
       stdio: 'inherit',
     })
   })
@@ -20,8 +13,9 @@ describe('Relay Compiler Transform - Multi Project Config', () => {
     const { next } = nextTestSetup({
       files: __dirname,
       dependencies: {
-        'relay-runtime': '13.0.2',
-        '@types/relay-runtime': '14.1.13',
+        'relay-compiler': '21.0.1',
+        'relay-runtime': '21.0.1',
+        '@types/relay-runtime': '20.1.1',
         react: '19.3.0-canary-fef12a01-20260413',
         'react-dom': '19.3.0-canary-fef12a01-20260413',
       },
@@ -56,8 +50,9 @@ describe('Relay Compiler Transform - Multi Project Config', () => {
     const { next } = nextTestSetup({
       files: __dirname,
       dependencies: {
-        'relay-runtime': '13.0.2',
-        '@types/relay-runtime': '14.1.13',
+        'relay-compiler': '21.0.1',
+        'relay-runtime': '21.0.1',
+        '@types/relay-runtime': '20.1.1',
         react: '19.3.0-canary-fef12a01-20260413',
         'react-dom': '19.3.0-canary-fef12a01-20260413',
       },

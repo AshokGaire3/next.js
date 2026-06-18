@@ -1,16 +1,14 @@
 /**
- * @generated SignedSource<<a6468d297da1928100bce80db9f1b8ab>>
+ * @generated SignedSource<<cb876bb940c4d1e98190d2e07ef3ad92>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
-/* eslint-disable */
+ 
 // @ts-nocheck
 
-import { ConcreteRequest, Query } from 'relay-runtime'
-export type pagesQuery$variables = {}
-export type pagesQueryVariables = pagesQuery$variables
+import { ConcreteRequest } from 'relay-runtime'
+export type pagesQuery$variables = Record<PropertyKey, never>
 export type pagesQuery$data = {
   readonly viewer: {
     readonly user: {
@@ -19,10 +17,9 @@ export type pagesQuery$data = {
     }
   }
 }
-export type pagesQueryResponse = pagesQuery$data
 export type pagesQuery = {
-  variables: pagesQueryVariables
   response: pagesQuery$data
+  variables: pagesQuery$variables
 }
 
 const node: ConcreteRequest = (function () {
@@ -41,7 +38,7 @@ const node: ConcreteRequest = (function () {
       name: 'user',
       plural: false,
       selections: [
-        v0 /*: any*/,
+        v0 /*:: as any*/,
         {
           alias: null,
           args: null,
@@ -66,7 +63,7 @@ const node: ConcreteRequest = (function () {
           kind: 'LinkedField',
           name: 'viewer',
           plural: false,
-          selections: [v1 /*: any*/],
+          selections: [v1 /*:: as any*/],
           storageKey: null,
         },
       ],
@@ -86,7 +83,7 @@ const node: ConcreteRequest = (function () {
           kind: 'LinkedField',
           name: 'viewer',
           plural: false,
-          selections: [v1 /*: any*/, v0 /*: any*/],
+          selections: [v1 /*:: as any*/, v0 /*:: as any*/],
           storageKey: null,
         },
       ],

@@ -1,4 +1,5 @@
 import { nextTestSetup, isNextDev, isNextStart } from 'e2e-utils'
+import { spawnSync } from 'node:child_process'
 ;((isNextDev && process.env.TURBOPACK_BUILD) ||
   (isNextStart && process.env.TURBOPACK_DEV)
   ? describe.skip
@@ -6,13 +7,16 @@ import { nextTestSetup, isNextDev, isNextStart } from 'e2e-utils'
   const { next } = nextTestSetup({
     files: __dirname,
     dependencies: {
-      'relay-compiler': '13.0.2',
-      'relay-runtime': '13.0.2',
-      '@types/relay-runtime': 'latest',
+      'relay-compiler': '21.0.1',
+      'relay-runtime': '21.0.1',
+      '@types/relay-runtime': '20.1.1',
     },
-    // Relay expects the project root to contain relay.config.js. Run the compiler
-    // after install so generated artifacts match the schema before dev/start.
-    installCommand: 'pnpm install && npx relay-compiler',
+  })
+
+  beforeAll(() => {
+    spawnSync('pnpm', ['exec', 'relay-compiler'], {
+      stdio: 'inherit',
+    })
   })
 
   it('should resolve index page correctly', async () => {

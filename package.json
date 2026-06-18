@@ -269,8 +269,6 @@
     "react-server-dom-webpack-experimental": "npm:react-server-dom-webpack@0.0.0-experimental-b1786c31-20260618",
     "react-ssr-prepass": "1.0.8",
     "react-virtualized": "9.22.3",
-    "relay-compiler": "13.0.2",
-    "relay-runtime": "13.0.2",
     "release": "6.3.1",
     "request-promise-core": "1.1.2",
     "resolve-from": "5.0.0",
