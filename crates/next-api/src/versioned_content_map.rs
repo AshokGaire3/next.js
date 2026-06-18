@@ -15,6 +15,8 @@ use turbopack_core::{
     version::OptionVersionedContent,
 };
 
+use crate::aggregate_hmr::{HmrChunkWithContent, is_hmr_eligible_chunk};
+
 #[derive(
     Clone, TraceRawVcs, PartialEq, Eq, ValueDebugFormat, Debug, NonLocalValue, Encode, Decode,
 )]
@@ -66,6 +68,9 @@ unsafe impl OperationValue for PathToOutputOperation {}
 type OutputOperationToComputeEntry =
     FxHashMap<OperationVc<ExpandedOutputAssets>, OperationVc<OptionMapEntry>>;
 
+// TODO: Ideally this structure is never persisted, so new sessions start from scratch and don't
+// accumulate entries or force rebuilds of all chunks when a new session is only interested in some
+// of them. If this happens, this should have #[turbo_tasks::value(evict = "never")].
 #[turbo_tasks::value]
 pub struct VersionedContentMap {
     // TODO: turn into a bi-directional multimap, ExpandedOutputAssets ->
@@ -84,12 +89,52 @@ impl VersionedContentMap {
         }
         .resolved_cell()
     }
+
+    /// Lists every HMR-eligible chunk under `root` paired with its current
+    /// [`VersionedContent`]. See [`is_hmr_eligible_chunk`] for the eligibility
+    /// rule.
+    ///
+    /// Not a `#[turbo_tasks::function]` because the per-chunk content fetch
+    /// already participates in the task graph; callers cache the aggregate at
+    /// their own granularity.
+    pub async fn hmr_chunks_in_path(
+        self: Vc<Self>,
+        root: &FileSystemPath,
+    ) -> Result<Vec<HmrChunkWithContent>> {
+        let this = self.await?;
+        let paths: Vec<FileSystemPath> = {
+            let map = &this.map_path_to_op.get().0;
+            map.keys().cloned().collect()
+        };
+
+        paths
+            .into_iter()
+            .filter_map(|path| {
+                let rel = root.get_path_to(&path)?;
+                if !is_hmr_eligible_chunk(&rel) {
+                    return None;
+                }
+                Some((RcStr::from(rel), path))
+            })
+            .map(|(name, path)| async move {
+                let content = self.get(path).await?;
+                Ok::<_, anyhow::Error>((*content).map(|content| HmrChunkWithContent {
+                    path: name,
+                    content,
+                }))
+            })
+            .try_flat_join()
+            .await
+    }
 }
 
 #[turbo_tasks::value_impl]
 impl VersionedContentMap {
     /// Inserts output assets into the map and returns a completion that when
     /// awaited will emit the assets that were inserted.
+    //
+    // TODO: If `VersionedContentMap` becomes transient as described above, these methods should be
+    // `#[turbo_tasks::function(session_dependent)]``
     #[turbo_tasks::function]
     pub async fn insert_output_assets(
         self: ResolvedVc<Self>,
