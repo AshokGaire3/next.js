@@ -272,16 +272,8 @@ export async function handler(
   // We use the resolvedPathname instead of the parsedUrl.pathname because it
   // is not rewritten as resolvedPathname is. This will ensure that the correct
   // prerender info is used instead of using the original pathname as the
-  // source. If however PPR is enabled and cacheComponents is disabled, we
-  // treat the pathname as dynamic. Currently, there's a bug in the PPR
-  // implementation that incorrectly leaves %%drp placeholders in the output of
-  // parallel routes. This is addressed with cacheComponents.
-  const prerenderMatch =
-    nextConfig.experimental.ppr &&
-    !nextConfig.cacheComponents &&
-    isInterceptionRouteAppPath(resolvedPathname)
-      ? null
-      : routeModule.match(resolvedPathname, prerenderManifest)
+  // source.
+  const prerenderMatch = routeModule.match(resolvedPathname, prerenderManifest)
   const prerenderInfo = prerenderMatch?.route ?? null
 
   const isPrerendered = !!prerenderManifest.routes[resolvedPathname]
@@ -310,9 +302,7 @@ export async function handler(
    * If the route being rendered is an app page, and the ppr feature has been
    * enabled, then the given route _could_ support PPR.
    */
-  const couldSupportPPR: boolean = checkIsAppPPREnabled(
-    nextConfig.experimental.ppr
-  )
+  const couldSupportPPR: boolean = checkIsAppPPREnabled(nextConfig)
 
   // Stash postponed state for server actions when in minimal mode.
   // We extract it here so the RDC is available for the re-render after the action completes.
@@ -906,7 +896,6 @@ export async function handler(
           validationLevel:
             nextConfig.experimental.instantInsights.validationLevel,
           experimental: {
-            isRoutePPREnabled,
             expireTime: nextConfig.expireTime,
             staleTimes: nextConfig.experimental.staleTimes,
             dynamicOnHover: Boolean(nextConfig.experimental.dynamicOnHover),
